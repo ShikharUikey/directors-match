@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Compass, FolderHeart, History, Settings, LogOut } from "lucide-react";
+import { Compass, FolderHeart, History, Settings, LogOut, Map, Calculator } from "lucide-react";
 
 export default function Sidebar() {
   return (
@@ -15,6 +15,12 @@ export default function Sidebar() {
         
         <NavLink href="/dashboard" icon={<Compass className="w-4 h-4" />}>
           Discover
+        </NavLink>
+        <NavLink href="/dashboard/planner" icon={<Map className="w-4 h-4" />}>
+          Planner
+        </NavLink>
+        <NavLink href="/dashboard/calculators" icon={<Calculator className="w-4 h-4" />}>
+          Calculators
         </NavLink>
         <NavLink href="/dashboard/collections" icon={<FolderHeart className="w-4 h-4" />}>
           Collections

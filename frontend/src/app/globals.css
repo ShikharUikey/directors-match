@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @theme {
   --color-background: #050505;
@@ -22,6 +23,12 @@
 
 body {
   background-color: var(--color-background);
+  background-image: 
+    linear-gradient(to bottom, rgba(5, 5, 5, 0.7), rgba(5, 5, 5, 0.95)),
+    url('/bg-cinematic.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: var(--color-foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }

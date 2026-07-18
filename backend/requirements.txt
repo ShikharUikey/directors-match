@@ -2,8 +2,14 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 pydantic
+pydantic[email]
 python-dotenv
 openai
 astral
 pvlib
 suncalc
+motor
+faiss-cpu
+pillow
+piexif
+requests

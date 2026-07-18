@@ -1,76 +1,69 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from models import AnalysisResponse, Location, TextUploadRequest
+from models import AnalysisResponse, LocationDB, TextUploadRequest
 import time
+from database import db
+from ai_engine import match_locations, add_location_to_index
+from typing import List
 
 app = FastAPI(
-    title="Directors Match API",
-    description="Intelligent Cinematic Planning Platform",
-    version="1.0.0"
+    title="Directors Match API - Phase 2",
+    description="City-Scale AI Cinematic Planning Platform",
+    version="2.0.0"
 )
 
 # Allow CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the frontend domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-MOCK_LOCATIONS = [
-    Location(
-        id="loc_1",
-        name="Neon Alleyway",
-        description="A dense, cyberpunk-style alley with vibrant neon signs and wet asphalt reflecting city lights.",
-        country="Japan",
-        image_url="https://images.unsplash.com/photo-1542051812871-755179bd14e4?q=80&w=2000&auto=format&fit=crop",
-        match_score=98,
-        lighting="Neon, High Contrast",
-        weather="Light Rain",
-        time_of_day="Night",
-        tags=["Urban", "Cyberpunk", "Cinematic", "Blade Runner"]
-    ),
-    Location(
-        id="loc_2",
-        name="Misty Highland Lake",
-        description="A moody, fog-covered lake surrounded by dark pine forests and dramatic mountains.",
-        country="Scotland",
-        image_url="https://images.unsplash.com/photo-1488667614050-42289f9e1db8?q=80&w=2000&auto=format&fit=crop",
-        match_score=92,
-        lighting="Soft, Diffused",
-        weather="Foggy",
-        time_of_day="Blue Hour",
-        tags=["Nature", "Moody", "A24", "Mist"]
-    ),
-    Location(
-        id="loc_3",
-        name="Brutalist Concrete Hall",
-        description="An imposing architectural space with sharp geometric lines and harsh dramatic shadows.",
-        country="Germany",
-        image_url="https://images.unsplash.com/photo-1518005020951-eccb494ad742?q=80&w=2000&auto=format&fit=crop",
-        match_score=85,
-        lighting="Harsh, Directional",
-        weather="Clear",
-        time_of_day="Midday",
-        tags=["Architecture", "Minimal", "Sci-Fi", "Dune"]
-    )
-]
-
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to Directors Match API"}
+    return {"message": "Welcome to Directors Match Phase 2 API"}
 
-from ai_engine import match_locations
+@app.get("/api/locations", response_model=List[LocationDB])
+async def get_locations():
+    cursor = db.locations.find({})
+    locations = []
+    async for doc in cursor:
+        locations.append(LocationDB(**doc))
+    return locations
+
+@app.post("/api/locations", response_model=LocationDB)
+async def create_location(location: LocationDB):
+    loc_dict = location.model_dump(by_alias=True, exclude_none=True)
+    if "_id" not in loc_dict or not loc_dict["_id"]:
+        import uuid
+        loc_dict["_id"] = str(uuid.uuid4())
+    await db.locations.insert_one(loc_dict)
+    loc_obj = LocationDB(**loc_dict)
+    
+    # Generate embedding and add to FAISS
+    await add_location_to_index(loc_obj)
+    
+    return loc_obj
 
 @app.post("/api/analyze/text", response_model=AnalysisResponse)
 async def analyze_text(request: TextUploadRequest):
+    # Fetch all locations from MongoDB
+    cursor = db.locations.find({})
+    all_locations = []
+    async for doc in cursor:
+        all_locations.append(LocationDB(**doc))
+        
+    # If no locations exist yet, return empty
+    if not all_locations:
+        return AnalysisResponse(
+            mood="Unknown", color_palette=["#022E24"], lighting_style="None", camera_angle="None", locations=[]
+        )
+        
     # Process text using the Original AI Matching Engine
-    matched_locations = match_locations(request.prompt, MOCK_LOCATIONS)
-    
-    # Simulate processing delay
-    time.sleep(1)
+    matched_locations = await match_locations(request.prompt, all_locations)
     
     # Simple mood extraction based on query
     mood = "Moody, Cinematic"
@@ -81,7 +74,7 @@ async def analyze_text(request: TextUploadRequest):
         
     return AnalysisResponse(
         mood=mood,
-        color_palette=["#0a0a0a", "#4a4a4a", "#e5e5e5"],
+        color_palette=["#022E24", "#4F8F75", "#E7F1EC"],
         lighting_style="Analyzed from prompt",
         camera_angle="Optimal Angle",
         locations=matched_locations
@@ -90,18 +83,28 @@ async def analyze_text(request: TextUploadRequest):
 @app.post("/api/analyze/image", response_model=AnalysisResponse)
 async def analyze_image(file: UploadFile = File(...)):
     # Simulate extracting a text description from the image using Vision AI
-    # Since we are running locally without an OpenAI key, we simulate a description
     simulated_image_description = "A dramatic landscape with high contrast lighting and moody atmosphere."
     
+    # Fetch all locations from MongoDB
+    cursor = db.locations.find({})
+    all_locations = []
+    async for doc in cursor:
+        all_locations.append(LocationDB(**doc))
+        
+    if not all_locations:
+        return AnalysisResponse(
+            mood="Unknown", color_palette=["#022E24"], lighting_style="None", camera_angle="None", locations=[]
+        )
+        
     # Process simulated description using the Original AI Matching Engine
-    matched_locations = match_locations(simulated_image_description, MOCK_LOCATIONS)
+    matched_locations = await match_locations(simulated_image_description, all_locations)
     
     # Simulate processing delay
     time.sleep(1.5)
     
     return AnalysisResponse(
         mood="Atmospheric, Intense",
-        color_palette=["#ff0055", "#002244", "#111111"],
+        color_palette=["#1F4D3A", "#9FC3B2", "#022E24"],
         lighting_style="High Contrast",
         camera_angle="Extracted from image",
         locations=matched_locations

@@ -2,17 +2,17 @@
 @import "leaflet/dist/leaflet.css";
 
 @theme {
-  --color-background: #050505;
-  --color-foreground: #f5f5f5;
-  --color-muted: #a3a3a3;
+  --color-background: #022E24;
+  --color-foreground: #E7F1EC;
+  --color-muted: #9FC3B2;
   
-  --color-primary: #ffffff;
-  --color-primary-foreground: #000000;
+  --color-primary: #4F8F75;
+  --color-primary-foreground: #022E24;
   
-  --color-accent: #e5e5e5;
+  --color-accent: #1F4D3A;
   
-  --color-card: rgba(255, 255, 255, 0.03);
-  --color-card-border: rgba(255, 255, 255, 0.08);
+  --color-card: rgba(31, 77, 58, 0.3);
+  --color-card-border: rgba(79, 143, 117, 0.2);
 
   --font-sans: var(--font-outfit);
 }
@@ -24,7 +24,7 @@
 body {
   background-color: var(--color-background);
   background-image: 
-    linear-gradient(to bottom, rgba(5, 5, 5, 0.3), rgba(5, 5, 5, 0.6)),
+    linear-gradient(to bottom, rgba(2, 46, 36, 0.4), rgba(2, 46, 36, 0.8)),
     url('/bg-cinematic.jpg');
   background-size: cover;
   background-position: center;
